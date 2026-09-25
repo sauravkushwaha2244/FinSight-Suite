@@ -10,6 +10,7 @@ import {
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -37,6 +38,63 @@ export default function ModelsPage() {
       await api.post('/ml/models/activate', { model_id: id }).catch(() => null);
       setModels(models.map(m => ({ ...m, is_active: m.id === id })));
     } catch (e) { /* demo */ }
+  };
+
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadModel = async () => {
+    setActionError('');
+    try {
+      const blob = await api.download(`/ml/models/${activeModel.id}/download`);
+      downloadBlob(blob, `${activeModel.version || 'model'}.pkl`);
+    } catch (err) {
+      setActionError(err.message || 'Model artifact could not be downloaded.');
+    }
+  };
+
+  const handleViewMetadata = () => {
+    setActionError('');
+    const metadata = {
+      version: activeModel.version,
+      algorithm: activeModel.algorithm,
+      trained_at: activeModel.trained_at,
+      training_samples: activeModel.training_samples,
+      features: activeModel.features,
+      metrics: {
+        mae: activeModel.mae,
+        rmse: activeModel.rmse,
+        r2: activeModel.r2,
+      },
+    };
+    downloadBlob(
+      new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' }),
+      `${activeModel.version || 'model'}-metadata.json`
+    );
+  };
+
+  const handlePerformanceReport = () => {
+    setActionError('');
+    const report = [
+      ['Metric', 'Value'],
+      ['Model version', activeModel.version],
+      ['Algorithm', activeModel.algorithm],
+      ['MAE', activeModel.mae],
+      ['RMSE', activeModel.rmse],
+      ['R2', activeModel.r2],
+      ['Training samples', activeModel.training_samples],
+      ['Features', activeModel.features],
+    ].map(row => row.join(',')).join('\n');
+    downloadBlob(
+      new Blob([report], { type: 'text/csv;charset=utf-8' }),
+      `${activeModel.version || 'model'}-performance.csv`
+    );
   };
 
   const activeModel = models.find(m => m.is_active);
@@ -136,7 +194,10 @@ export default function ModelsPage() {
           <p className="text-2xl font-extrabold text-slate-900 tracking-tight tabular-nums">
             {(activeModel?.training_samples || 0).toLocaleString()}
           </p>
-          <p className="text-xs text-slate-500 mt-1">Last trained {activeModel?.training_at ? new Date(activeModel.training_at).toLocaleDateString() : '—'}</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Last trained {activeModel?.training_at ? new Date(activeModel.training_at).toLocaleDateString() : '—'}
+            {activeModel?.training_data ? ` • ${activeModel.training_data}` : ''}
+          </p>
         </div>
       </div>
 
@@ -169,16 +230,17 @@ export default function ModelsPage() {
                 Processing real-time inference via FastAPI with sub-50ms p99 latency.
               </p>
               <div className="flex flex-wrap gap-3">
-                <button className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
+                <button onClick={handleDownloadModel} className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
                   <Download className="w-4 h-4" /> Download .pkl
                 </button>
-                <button className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
+                <button onClick={handleViewMetadata} className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
                   <FileJson className="w-4 h-4" /> View Metadata
                 </button>
-                <button className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
+                <button onClick={handlePerformanceReport} className="btn bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20">
                   <BarChart3 className="w-4 h-4" /> Performance Report
                 </button>
               </div>
+              {actionError && <p className="mt-3 text-sm font-semibold text-rose-200">{actionError}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[

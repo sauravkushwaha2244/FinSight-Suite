@@ -2,11 +2,11 @@ import os
 import json
 import joblib
 import datetime
+import numpy as np
 import pandas as pd
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
-from dotenv import load_dotenv
 
 def train():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,11 +20,13 @@ def train():
     df['period_dt'] = pd.to_datetime(df['period'] + '-01')
     df = df.sort_values(by='period_dt').reset_index(drop=True)
     
-    features = [
+    base_features = [
         'month', 'quarter', 'amount_lag_1', 'amount_lag_3',
         'rolling_3m_avg', 'rolling_6m_avg', 'roi_lag_1',
         'spend_ratio', 'mom_growth', 'category_encoded'
     ]
+    additional_features = ['yoy_growth', 'month_sin', 'month_cos']
+    features = [f for f in base_features + additional_features if f in df.columns]
     target = 'amount'
     
     # 80/20 train/test split sequentially
@@ -45,7 +47,7 @@ def train():
     preds = model.predict(X_test_scaled)
     
     mae = mean_absolute_error(y_test, preds)
-    rmse = mean_squared_error(y_test, preds, squared=False)
+    rmse = np.sqrt(mean_squared_error(y_test, preds))
     r2 = r2_score(y_test, preds)
     
     best_model_name = 'XGBoost'
@@ -55,7 +57,7 @@ def train():
     print("XGBoost Training Results:")
     print(f"  MAE:  {mae:.2f}")
     print(f"  RMSE: {rmse:.2f}")
-    print(f"  R²:   {r2:.4f}")
+    print(f"  R^2:  {r2:.4f}")
     
     os.makedirs(os.path.join(base_dir, 'models'), exist_ok=True)
     model_path = os.path.join(base_dir, 'models', 'spend_forecast_model.pkl')
@@ -80,5 +82,4 @@ def train():
     print("Saved best model, scaler, and metadata to models/")
 
 if __name__ == "__main__":
-    load_dotenv()
     train()

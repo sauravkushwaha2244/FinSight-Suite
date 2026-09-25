@@ -5,3 +5,5 @@ xgboost
 joblib
 supabase
 python-dotenv
+pyyaml
+pdfplumber

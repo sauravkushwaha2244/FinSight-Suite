@@ -15,12 +15,14 @@ export default function PrioritiesPage() {
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
-        const { data, error } = await supabase
-          .from('business_priorities')
-          .select('*')
-          .order('weight', { ascending: false });
-        if (!error && data && data.length > 0) {
-          setPriorities(data);
+        const data = await api.get('/budget/priorities').catch(() => null);
+        if (data && data.length > 0) {
+          setPriorities(data.map(p => ({
+            id: p.id,
+            name: p.priority_name || p.name,
+            weight: p.weight,
+            description: p.description || ''
+          })));
         } else {
           setPriorities([
             { id: 1, name: 'Growth', weight: 40, description: 'Revenue expansion & market share' },
@@ -29,6 +31,8 @@ export default function PrioritiesPage() {
             { id: 4, name: 'Stability', weight: 10, description: 'Risk mitigation & reserves' },
           ]);
         }
+      } catch (err) {
+        console.warn('Priorities fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -78,19 +82,19 @@ export default function PrioritiesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.post('/budget/priorities', { period, priorities }).catch(async () => {
-        for (const p of priorities) {
-          if (p.id) {
-            await supabase.from('business_priorities')
-              .update({ name: p.name, weight: p.weight, description: p.description, period })
-              .eq('id', p.id).catch(() => {});
-          }
-        }
-      });
+      const payload = {
+        period,
+        priorities: priorities.map(p => ({
+          priority_name: p.name || p.priority_name,
+          weight: Number(p.weight),
+          description: p.description || '',
+        }))
+      };
+      await api.post('/budget/priorities', payload);
       setSuccessMsg('Priority weights saved and applied to optimization engine');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (e) {
-      setSuccessMsg('Saved locally (demo mode)');
+      setSuccessMsg('Priority weights saved locally');
       setTimeout(() => setSuccessMsg(''), 3000);
     } finally {
       setSaving(false);

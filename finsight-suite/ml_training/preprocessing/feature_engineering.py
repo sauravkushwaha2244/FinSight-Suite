@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
-from dotenv import load_dotenv
 
 def process_data(input_path, output_path):
     print(f"Loading data from {input_path}")
@@ -34,6 +33,13 @@ def process_data(input_path, output_path):
     # MoM growth
     df['mom_growth'] = df.groupby('category')['amount'].pct_change() * 100
     
+    # Year-over-Year growth (if sufficient history, else filled with 0)
+    df['yoy_growth'] = df.groupby('category')['amount'].pct_change(12) * 100
+
+    # Month-of-year cyclical seasonality features
+    df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12.0)
+    df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12.0)
+    
     # Label encoding
     le = LabelEncoder()
     df['category_encoded'] = le.fit_transform(df['category'])
@@ -48,7 +54,6 @@ def process_data(input_path, output_path):
     print("Processed shape:", df.shape)
 
 if __name__ == "__main__":
-    load_dotenv()
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     in_path = os.path.join(base_dir, 'data', 'financial_data.csv')
     out_path = os.path.join(base_dir, 'data', 'processed_features.csv')

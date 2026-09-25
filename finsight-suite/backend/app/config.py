@@ -21,8 +21,17 @@ class Settings(BaseSettings):
     )
 
     # Feature flags / runtime
-    DEMO_MODE_FALLBACK: bool = True
+    DEMO_MODE_FALLBACK: bool = False
     REQUEST_TIMEOUT: int = 30
+
+    # Local Auth & JWT
+    JWT_SECRET: str = "finsight-super-secret-jwt-key-2026-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
+
+    # LLM Settings (Anthropic)
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -13,6 +13,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, RadarChart, PolarGrid, PolarA
 import { api } from '../../lib/api';
 
 export default function DashboardPage() {
+  const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState({
     budget: null,
     risk: null,
@@ -20,27 +23,42 @@ export default function DashboardPage() {
     error: null
   });
 
+  const fetchDashboardData = async () => {
+    setRefreshing(true);
+    try {
+      const [budgetResult, riskResult] = await Promise.allSettled([
+        api.get('/budget/recommendations'),
+        api.get('/risk/dashboard')
+      ]);
+      const budgetRes = budgetResult.status === 'fulfilled' ? budgetResult.value : null;
+      const riskRes = riskResult.status === 'fulfilled' ? riskResult.value : null;
+      setData({
+        budget: budgetRes,
+        risk: riskRes,
+        loading: false,
+        error: budgetRes && riskRes ? null : 'Some dashboard data could not be loaded.'
+      });
+    } catch (err) {
+      setData(prev => ({ ...prev, loading: false, error: err.message }));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [budgetRes, riskRes] = await Promise.all([
-          api.get('/budget/recommendations').catch(() => null),
-          api.get('/risk/dashboard').catch(() => null)
-        ]);
-
-        setData({
-          budget: budgetRes,
-          risk: riskRes,
-          loading: false,
-          error: null
-        });
-      } catch (err) {
-        setData(prev => ({ ...prev, loading: false, error: err.message }));
-      }
-    };
-
+    setMounted(true);
     fetchDashboardData();
   }, []);
+
+  const exportDashboard = () => {
+    const blob = new Blob([JSON.stringify({ budget: data.budget, risk: data.risk }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `finsight-dashboard-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const spendTrendData = [
     { month: 'Apr', actual: 420, recommended: 450, forecast: 480 },
@@ -149,7 +167,7 @@ export default function DashboardPage() {
               Live Data
             </span>
             <span className="text-xs font-medium text-slate-400">
-              Last updated: {new Date().toLocaleTimeString()}
+              Last updated: {mounted ? new Date().toLocaleTimeString() : '--:--:--'}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -160,18 +178,24 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="btn-outline">
+          <button onClick={() => setShowFilters(value => !value)} className="btn-outline" aria-expanded={showFilters}>
             <Filter className="w-4 h-4" /> Filter
             <ChevronDown className="w-4 h-4 ml-1" />
           </button>
-          <button className="btn-outline">
+          <button onClick={exportDashboard} className="btn-outline">
             <Download className="w-4 h-4" /> Export
           </button>
-          <button className="btn-primary">
-            <RefreshCw className="w-4 h-4" /> Refresh Data
+          <button onClick={fetchDashboardData} disabled={refreshing} className="btn-primary">
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} /> {refreshing ? 'Refreshing...' : 'Refresh Data'}
           </button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          Dashboard data is scoped to the authenticated organization by the backend.
+        </div>
+      )}
 
       {data.error && (
         <div className="rounded-2xl border border-warning-200 bg-warning-50 p-5 flex items-start gap-3">

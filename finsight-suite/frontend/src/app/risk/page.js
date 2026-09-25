@@ -19,6 +19,7 @@ export default function RiskPage() {
     loading: true
   });
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchRiskData = async () => {
     try {
@@ -93,6 +94,16 @@ export default function RiskPage() {
 
   const filteredAlerts = severityFilter === 'all' ? data.alerts : data.alerts.filter(a => (a.severity || '').toLowerCase() === severityFilter);
 
+  const exportReport = () => {
+    const blob = new Blob([JSON.stringify({ dashboard: data.dashboard, alerts: data.alerts }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `finsight-risk-report-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (data.loading) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -132,10 +143,10 @@ export default function RiskPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="btn-outline">
+          <button onClick={() => setShowFilters(value => !value)} className="btn-outline" aria-expanded={showFilters}>
             <Filter className="w-4 h-4" /> Filters
           </button>
-          <button className="btn-outline">
+          <button onClick={exportReport} className="btn-outline">
             <Download className="w-4 h-4" /> Export Report
           </button>
           <button onClick={fetchRiskData} className="btn-primary">
@@ -143,6 +154,12 @@ export default function RiskPage() {
           </button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          Choose a severity below to filter the active risk alert feed.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <div className="lg:col-span-2 card p-6 lg:p-8 flex flex-col items-center justify-center">

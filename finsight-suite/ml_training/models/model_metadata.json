@@ -1,0 +1,26 @@
+{
+  "model_name": "spend_forecaster",
+  "version": "1.0.0",
+  "algorithm": "XGBoost",
+  "features": [
+    "month",
+    "quarter",
+    "amount_lag_1",
+    "amount_lag_3",
+    "rolling_3m_avg",
+    "rolling_6m_avg",
+    "roi_lag_1",
+    "spend_ratio",
+    "mom_growth",
+    "category_encoded",
+    "yoy_growth",
+    "month_sin",
+    "month_cos"
+  ],
+  "metrics": {
+    "mae": 2863429.75,
+    "rmse": 8974837.937583497,
+    "r2": 0.9766740202903748
+  },
+  "trained_at": "2026-09-25T08:31:24.305543"
+}

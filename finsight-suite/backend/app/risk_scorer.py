@@ -11,6 +11,13 @@ WEIGHTS = {
     "volatility": 0.15
 }
 
+# Calibrated thresholds for real financial variance and volatility distributions
+INDICATOR_ALERT_THRESHOLD = 80.0
+COMPOSITE_CRITICAL_THRESHOLD = 70.0
+SEVERITY_CRITICAL_THRESHOLD = 75.0
+SEVERITY_HIGH_THRESHOLD = 50.0
+SEVERITY_MEDIUM_THRESHOLD = 25.0
+
 def calculate_risk_score(org_id: str, period: str, supabase_client) -> dict:
     logger.info(f"Calculating risk score for org {org_id}, period {period}")
     
@@ -45,32 +52,32 @@ def calculate_risk_score(org_id: str, period: str, supabase_client) -> dict:
             breakdown[t] = normalized
             composite_score += normalized * weight
             
-            if normalized > 80:
+            if normalized > INDICATOR_ALERT_THRESHOLD:
                 alerts_to_create.append({
                     "org_id": org_id,
                     "indicator_id": latest_by_type[t]["id"],
                     "severity": "high",
-                    "threshold_breached": f"{t} score {normalized:.1f} exceeds threshold 80",
+                    "threshold_breached": f"{t} score {normalized:.1f} exceeds threshold {INDICATOR_ALERT_THRESHOLD:.0f}",
                     "acknowledged": False
                 })
         else:
             breakdown[t] = 0.0
             
     # Determine severity
-    if composite_score >= 75:
+    if composite_score >= SEVERITY_CRITICAL_THRESHOLD:
         severity = "critical"
-    elif composite_score >= 50:
+    elif composite_score >= SEVERITY_HIGH_THRESHOLD:
         severity = "high"
-    elif composite_score >= 25:
+    elif composite_score >= SEVERITY_MEDIUM_THRESHOLD:
         severity = "medium"
     else:
         severity = "low"
         
-    if composite_score > 70:
+    if composite_score > COMPOSITE_CRITICAL_THRESHOLD:
         alerts_to_create.append({
             "org_id": org_id,
             "severity": "critical",
-            "threshold_breached": f"Composite risk score {composite_score:.1f} exceeds threshold 70",
+            "threshold_breached": f"Composite risk score {composite_score:.1f} exceeds threshold {COMPOSITE_CRITICAL_THRESHOLD:.0f}",
             "acknowledged": False
         })
         

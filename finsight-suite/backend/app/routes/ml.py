@@ -1,4 +1,8 @@
+import os
+import json
+import csv
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response, FileResponse
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from app.auth import get_current_user, require_admin
@@ -53,6 +57,42 @@ DEMO_MODELS = [
         "metrics_json": {"mae": 785.4, "rmse": 1020.6, "r2": 0.841, "mape": 7.21},
     },
 ]
+
+
+def _local_model_registry():
+    """Expose the locally trained artifact when Supabase registry is unavailable."""
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ml_training"))
+    metadata_path = os.path.join(base_dir, "models", "model_metadata.json")
+    data_path = os.path.join(base_dir, "data", "financial_data.csv")
+
+    if not os.path.isfile(metadata_path) or not os.path.isfile(data_path):
+        return DEMO_MODELS
+
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as file:
+            metadata = json.load(file)
+        with open(data_path, "r", encoding="utf-8", newline="") as file:
+            training_samples = max(sum(1 for _ in csv.DictReader(file)), 0)
+        metrics = metadata.get("metrics") or {}
+        return [{
+            "id": "local-spend-forecaster",
+            "version": metadata.get("version", "local"),
+            "algorithm": metadata.get("algorithm", "XGBoost"),
+            "trained_at": metadata.get("trained_at"),
+            "training_at": metadata.get("trained_at"),
+            "mae": metrics.get("mae", 0),
+            "rmse": metrics.get("rmse", 0),
+            "r2": metrics.get("r2", 0),
+            "training_samples": training_samples,
+            "training_duration": "Local training",
+            "features": len(metadata.get("features") or []),
+            "is_active": True,
+            "metrics_json": metrics,
+            "training_data": "ml_training/data/financial_data.csv",
+        }]
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        logger.warning("Local model registry unavailable: %s", exc)
+        return DEMO_MODELS
 
 
 def _demo_predictions(org_id: str, horizon: int = 12):
@@ -185,7 +225,7 @@ def activate_model(
 def list_models(user: dict = Depends(get_current_user)):
     supabase = get_service_client()
     if not supabase:
-        return DEMO_MODELS
+        return _local_model_registry()
 
     try:
         res = (
@@ -206,7 +246,47 @@ def list_models(user: dict = Depends(get_current_user)):
                     "r2": m.get("r2") or metrics.get("r2", 0),
                 })
             return out
-        return DEMO_MODELS
+        return _local_model_registry()
     except Exception as e:
         logger.warning(f"list_models failed, fallback: {e}")
-        return DEMO_MODELS
+        return _local_model_registry()
+
+
+@router.get("/models/{model_id}/download", summary="Download a model artifact")
+def download_model(model_id: str, user: dict = Depends(get_current_user)):
+    """Download a registered model artifact or the local demo artifact."""
+    supabase = get_service_client()
+    if supabase:
+        try:
+            record = (
+                supabase.table("ml_models")
+                .select("id,version,storage_path")
+                .eq("id", model_id)
+                .limit(1)
+                .execute()
+            )
+            if not record.data or not record.data[0].get("storage_path"):
+                raise HTTPException(status_code=404, detail="Model artifact not found")
+            model = record.data[0]
+            artifact = supabase.storage.from_("ml-models").download(model["storage_path"])
+            return Response(
+                content=artifact,
+                media_type="application/octet-stream",
+                headers={"Content-Disposition": f'attachment; filename="{model["version"]}.pkl"'},
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception(f"Model download failed: {e}")
+            raise HTTPException(status_code=500, detail="Unable to download model artifact")
+
+    artifact_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", "ml_training", "models", "spend_forecast_model.pkl")
+    )
+    if not os.path.isfile(artifact_path):
+        raise HTTPException(status_code=404, detail="Local model artifact is not available")
+    return FileResponse(
+        artifact_path,
+        media_type="application/octet-stream",
+        filename=f"{model_id}.pkl",
+    )

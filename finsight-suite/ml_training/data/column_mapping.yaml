@@ -1,0 +1,30 @@
+# FinSight Suite - Real Sales Data Column Mapping
+# Edit this file when your real company export headers differ.
+# Keys are source file column names; values are target normalized fields (date, amount, category, actual_roi).
+
+"Txn Date": "date"
+"Transaction Date": "date"
+"Order Date": "date"
+"Posting Date": "date"
+"Date": "date"
+"Period": "date"
+
+"Net Amount": "amount"
+"Total": "amount"
+"Amount": "amount"
+"Sales": "amount"
+"Revenue": "amount"
+"Spend": "amount"
+"Total Spend": "amount"
+
+"Category": "category"
+"Department": "category"
+"Product Category": "category"
+"Spend Category": "category"
+"Expense Category": "category"
+"Segment": "category"
+
+"ROI": "actual_roi"
+"Actual ROI": "actual_roi"
+"Return": "actual_roi"
+"Measured ROI": "actual_roi"

@@ -19,6 +19,7 @@ export default function BudgetPage() {
   const [lockedCategories, setLockedCategories] = useState({});
   const [sliderValues, setSliderValues] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
+  const [draftSaved, setDraftSaved] = useState(false);
 
   const scenarios = [
     { id: 'conservative', label: 'Conservative', desc: 'Minimize variance, prioritize stability', icon: Scale, color: 'from-sky-500 to-blue-600' },
@@ -82,6 +83,28 @@ export default function BudgetPage() {
     setSliderValues(prev => ({ ...prev, [category]: value }));
   };
 
+  const saveDraft = () => {
+    localStorage.setItem('finsight_budget_draft', JSON.stringify({
+      totalBudget, period, scenario, sliderValues, lockedCategories
+    }));
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 3000);
+  };
+
+  const resetRecommendations = () => {
+    if (!results) return;
+    const values = {};
+    results.recommendations.forEach(rec => { values[rec.category_name] = rec.recommended_budget; });
+    setSliderValues(values);
+    setLockedCategories({});
+  };
+
+  const approveAndApply = async () => {
+    await handleOptimize();
+    setSuccessMsg('Optimization approved and applied to the active budget plan');
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
   const totalAllocated = Object.values(sliderValues).reduce((a, b) => a + b, 0);
   const remaining = totalBudget - totalAllocated;
   const remainingPct = totalBudget > 0 ? (remaining / totalBudget) * 100 : 0;
@@ -108,7 +131,7 @@ export default function BudgetPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="btn-outline">
+          <button onClick={saveDraft} className="btn-outline">
             <Save className="w-4 h-4" /> Save Draft
           </button>
           <button
@@ -129,6 +152,8 @@ export default function BudgetPage() {
             )}
           </button>
         </div>
+
+        {draftSaved && <p className="text-sm font-semibold text-success-700">Draft saved in this browser.</p>}
       </div>
 
       {successMsg && (
@@ -327,7 +352,7 @@ export default function BudgetPage() {
               </div>
 
               <div className="mt-7 pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
-                <button className="btn-outline">
+                <button onClick={resetRecommendations} className="btn-outline">
                   <RefreshCw className="w-4 h-4" />
                   Reset to Recommendations
                 </button>
@@ -335,7 +360,7 @@ export default function BudgetPage() {
                   <Calculator className="w-4 h-4" />
                   Re-optimize with Locks
                 </button>
-                <button className="btn-primary">
+                <button onClick={approveAndApply} disabled={loading} className="btn-primary">
                   <CheckCircle2 className="w-4 h-4" />
                   Approve & Apply
                 </button>

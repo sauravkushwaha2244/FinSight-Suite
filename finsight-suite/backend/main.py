@@ -8,8 +8,9 @@ from contextlib import asynccontextmanager
 from app.config import get_settings
 from app.supabase_client import get_service_client
 import app.ml_inference as ml_inference
+from app.db import init_db
 
-from app.routes import budget, risk, ml
+from app.routes import budget, risk, ml, auth
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,21 +24,25 @@ async def lifespan(app: FastAPI):
     logger.info("Starting up Financial Intelligence Suite v1.1.0...")
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     try:
+        init_db()
+        logger.info("✓ Persistent database initialized (SQLite: finsight.db)")
+    except Exception as e:
+        logger.error(f"✗ Failed to initialize database: {e}")
+
+    try:
         supabase = get_service_client()
         if supabase:
             logger.info("✓ Supabase service client initialized")
             ml_inference.load_model(supabase)
             logger.info("✓ ML inference module loaded")
         else:
-            logger.warning("⚠ Supabase not configured — running in DEMO mode with mock data")
-            logger.warning("⚠ Configure SUPABASE_URL + SUPABASE_SERVICE_KEY in .env for full functionality")
+            logger.info("✓ Operating with local persistent database engine")
     except Exception as e:
         logger.warning(f"⚠ Startup dependency issue: {e}")
-        logger.warning("⚠ Backend will operate with in-memory demo fallbacks")
 
     logger.info("✓ Budget optimization engine ready (scipy SLSQP)")
     logger.info("✓ Risk scoring engine ready (5-indicator composite)")
-    logger.info("✓ API routes registered: budget, risk, ml")
+    logger.info("✓ API routes registered: auth, budget, risk, ml")
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     yield
     logger.info("Shutting down FinSight Suite backend...")
@@ -102,6 +107,8 @@ cors_origins = [
 dev_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
 ]
@@ -148,6 +155,7 @@ async def add_process_time_header(request: Request, call_next):
 
 
 # ── Routers ──────────────────────────────────────────────────────────────────
+app.include_router(auth.router)
 app.include_router(budget.router)
 app.include_router(risk.router)
 app.include_router(ml.router)
@@ -212,4 +220,3 @@ async def validation_exception_handler(request: Request, exc):
             "errors": exc.errors(),
         },
     )
-
