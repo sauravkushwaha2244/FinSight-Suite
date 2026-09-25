@@ -1,10 +1,4 @@
-# ---------- render.yaml ----------
-# Render Blueprint — deploys both Frontend + Backend from one repo.
-# Push this to GitHub, then go to: https://render.com/deploy
-# Click "New Blueprint Instance" → select your repo → done!
-
 services:
-  # ── Backend (FastAPI) ──────────────────────────────────
   - type: web
     name: finsight-backend
     runtime: python
@@ -13,48 +7,23 @@ services:
     rootDir: finsight-suite/backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
     envVars:
       - key: SUPABASE_URL
-        sync: false          # you fill this in Render dashboard
+        sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
-      - key: REDIS_URL
-        fromService:
-          name: finsight-redis
-          type: redis
-          property: connectionString
-      - key: CORS_ORIGINS
-        value: https://finsight-frontend.onrender.com
-      - key: PYTHON_VERSION
-        value: "3.11.9"
-
-  # ── Frontend (Next.js) ─────────────────────────────────
-  - type: web
-    name: finsight-frontend
-    runtime: node
-    plan: free
-    region: oregon
-    rootDir: finsight-suite/frontend
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
-      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        sync: false
-      - key: NEXT_PUBLIC_API_URL
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BACKEND_URL
         value: https://finsight-backend.onrender.com
-      - key: NODE_VERSION
-        value: "20.11.0"
-      - key: PORT
-        value: "3000"
-
-  # ── Redis (for Celery) ─────────────────────────────────
-  - type: redis
-    name: finsight-redis
-    region: oregon
-    plan: free
-    maxmemoryPolicy: allkeys-lfu
-    ipAllowList: []           # only internal access
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DEMO_MODE_FALLBACK
+        value: "true"
+      - key: ACTIVE_MODEL_VERSION
+        value: "1.0.0"
+      - key: MODEL_BUCKET
+        value: ml-models
