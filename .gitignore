@@ -1,0 +1,43 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# ML models
+*.pkl
+*.joblib
+ml_training/models/*.pkl
+ml_training/data/*.csv
+!ml_training/models/spend_forecast_model.pkl
+!ml_training/models/scaler.pkl
+!ml_training/models/model_metadata.json
+!ml_training/data/financial_data.csv
+!ml_training/data/processed_features.csv
+
+# Node
+node_modules/
+.next/
+.next-stale/
+out/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+
+# Local runtime database
+backend/finsight.db
