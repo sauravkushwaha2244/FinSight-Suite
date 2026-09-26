@@ -27,3 +27,26 @@ services:
         value: "1.0.0"
       - key: MODEL_BUCKET
         value: ml-models
+
+  - type: web
+    name: finsight-frontend
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: finsight-suite/frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://finsight-backend.onrender.com
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+
+  - type: redis
+    name: finsight-redis
+    plan: free
+    region: oregon
+    ipAllowList: []

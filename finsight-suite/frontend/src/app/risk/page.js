@@ -166,6 +166,10 @@ export default function RiskPage() {
           <h3 className="text-lg font-extrabold text-slate-900 mb-1 tracking-tight">Overall Risk Posture</h3>
           <p className="text-sm text-slate-500 mb-6">Composite score — 5 weighted indicators</p>
           <RiskGauge score={overallScore} severity={overallSeverity} size="large" />
+          <p className="mt-5 text-center text-xs leading-relaxed text-slate-500">
+            Budget variance is calculated from the absolute difference between each current allocation
+            and its latest Budget Optimization recommendation, divided by the recommended total.
+          </p>
         </div>
 
         <div className="lg:col-span-3 card p-6 lg:p-8">
@@ -236,6 +240,64 @@ export default function RiskPage() {
                 ) : null;
               })}
             </div>
+          </div>
+
+          <div className="mt-6 border-t border-slate-100 pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Alerts Generated
+              </p>
+              {severityFilter !== 'all' && (
+                <button
+                  onClick={() => setSeverityFilter('all')}
+                  className="text-xs font-semibold text-primary-600 hover:text-primary-700"
+                >
+                  Show all
+                </button>
+              )}
+            </div>
+            {filteredAlerts.length > 0 ? (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {filteredAlerts.slice(0, 8).map((alert) => {
+                  const alertSeverity = (alert.severity || 'low').toLowerCase();
+                  const severityStyles = {
+                    critical: 'border-danger-200 bg-danger-50/60 text-danger-700',
+                    high: 'border-orange-200 bg-orange-50/60 text-orange-700',
+                    medium: 'border-warning-200 bg-warning-50/60 text-warning-700',
+                    low: 'border-success-200 bg-success-50/60 text-success-700',
+                  };
+                  return (
+                    <div
+                      key={alert.id}
+                      className={`rounded-xl border px-3.5 py-3 ${severityStyles[alertSeverity] || severityStyles.low}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold uppercase tracking-wide">
+                            {alert.indicator_type || 'Risk Alert'}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-slate-700">
+                            {alert.message || alert.threshold_breached || 'Risk threshold requires review.'}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-md bg-white/70 px-2 py-1 text-[10px] font-black uppercase">
+                          {alertSeverity}
+                        </span>
+                      </div>
+                      {alert.created_at && (
+                        <p className="mt-2 text-[10px] font-medium text-slate-500">
+                          Generated {new Date(alert.created_at).toLocaleString('en-IN')}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-xs text-slate-500">
+                No alerts generated for this severity.
+              </p>
+            )}
           </div>
         </div>
       </div>
