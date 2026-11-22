@@ -10,7 +10,7 @@ from app.supabase_client import get_service_client
 import app.ml_inference as ml_inference
 from app.db import init_db
 
-from app.routes import budget, risk, ml, auth, data, analysis
+from app.routes import budget, risk, ml, data, analysis
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,11 +61,8 @@ Budget optimization, real-time risk scoring, and ML-powered forecasting backend.
 - **Risk Scorer**: 5-indicator weighted composite with automatic alert generation
 - **ML Inference**: XGBoost spend forecasting with versioned artifact management
 
-## Authentication
-All `/budget/*`, `/risk/*`, `/ml/*` endpoints require a valid Supabase JWT in the Authorization header:
-```
-Authorization: Bearer <access_token>
-```
+## Access
+All API endpoints are available without authentication.
     """,
     lifespan=lifespan,
     contact={
@@ -75,24 +72,6 @@ Authorization: Bearer <access_token>
     license_info={
         "name": "MIT License",
     },
-    tags_metadata=[
-        {
-            "name": "Health",
-            "description": "Service health and status endpoints",
-        },
-        {
-            "name": "Budget",
-            "description": "Budget optimization, recommendations, and priority management",
-        },
-        {
-            "name": "Risk",
-            "description": "Risk dashboard, alerts, and indicator ingestion",
-        },
-        {
-            "name": "ML",
-            "description": "ML model registry, inference, and version activation",
-        },
-    ],
 )
 
 settings = get_settings()
@@ -155,7 +134,6 @@ async def add_process_time_header(request: Request, call_next):
 
 
 # ── Routers ──────────────────────────────────────────────────────────────────
-app.include_router(auth.router)
 app.include_router(budget.router)
 app.include_router(risk.router)
 app.include_router(ml.router)

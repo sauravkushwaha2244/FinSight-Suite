@@ -34,7 +34,7 @@ Budget Optimization Engine + Financial Risk Intelligence Dashboard with separate
 - **Budget Optimization** — Constrained optimization (scipy) with conservative/balanced/aggressive scenarios
 - **Risk Intelligence** — Composite risk scoring across 5 indicator categories with real-time alerts
 - **ML Forecasting** — XGBoost spend forecasting, trained offline, served via API
-- **Supabase Auth** — Email + OAuth, JWT verification, Row-Level Security
+- **Open Demo Access** — No login or Supabase authentication required
 - **Real-time Alerts** — Supabase Realtime subscriptions for risk alerts
 - **Celery Scheduling** — Nightly recalculation of risk scores and budget recommendations
 
@@ -47,7 +47,6 @@ Budget Optimization Engine + Financial Risk Intelligence Dashboard with separate
 | Database | Supabase (PostgreSQL + Auth + Realtime + Storage) |
 | ML Training | XGBoost, scikit-learn, pandas |
 | Task Queue | Celery + Redis |
-| Auth | Supabase Auth (JWT) |
 
 ## Project Structure
 

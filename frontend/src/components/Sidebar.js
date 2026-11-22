@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from './AuthProvider';
 import {
   LayoutDashboard, Wallet, ShieldAlert, Target, Tags, Brain,
-  LogOut, TrendingUp, ChevronRight, User, Bell, X
+  ChevronRight, Bell, X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -16,7 +15,6 @@ export default function Sidebar({
   setMobileOpen
 }) {
   const pathname = usePathname();
-  const { signOut, session } = useAuth();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
 
   const isControlled = externalCollapsed !== undefined && externalSetCollapsed !== undefined;
@@ -58,7 +56,7 @@ export default function Sidebar({
     return acc;
   }, {});
 
-  const userEmail = session?.user?.email || 'admin@finsight.com';
+  const userEmail = 'admin@finsight.com';
   const userInitials = userEmail.split('@')[0].slice(0, 2).toUpperCase();
 
   return (
@@ -211,14 +209,6 @@ export default function Sidebar({
                 >
                   {userInitials || 'U'}
                 </div>
-                <button
-                  onClick={signOut}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors"
-                  title="Sign Out"
-                  aria-label="Sign Out"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -228,7 +218,7 @@ export default function Sidebar({
                       {userInitials || 'U'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{session?.user?.email?.split('@')[0] || 'User'}</p>
+                      <p className="text-sm font-semibold text-white truncate">Administrator</p>
                       <p className="text-[10px] text-slate-400 truncate">{userEmail}</p>
                     </div>
                     <button className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0" title="Notifications">
@@ -244,13 +234,6 @@ export default function Sidebar({
                   </div>
                 </div>
 
-                <button
-                  onClick={signOut}
-                  className="flex w-full items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:text-danger-400 hover:bg-danger-500/10 transition-colors"
-                >
-                  <LogOut className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-medium text-sm">Sign Out</span>
-                </button>
               </div>
             )}
           </div>

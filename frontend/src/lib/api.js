@@ -1,27 +1,9 @@
-import { supabase } from './supabase';
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 async function apiFetch(path, options = {}) {
   const { responseType, ...fetchOptions } = options;
-  let token = null;
-
-  if (typeof window !== 'undefined') {
-    token = localStorage.getItem('finsight_token');
-  }
-
-  if (!token) {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      token = session?.access_token;
-    } catch (e) {
-      // Supabase is optional when using the local backend authentication.
-    }
-  }
-
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
@@ -49,18 +31,10 @@ export const api = {
   delete: (path, options) => apiFetch(path, { ...options, method: 'DELETE' }),
   download: (path, options) => apiFetch(path, { ...options, method: 'GET', responseType: 'blob' }),
   upload: async (path, formData, options = {}) => {
-    let token = null;
-    if (typeof window !== 'undefined') {
-      token = localStorage.getItem('finsight_token');
-    }
-    const headers = {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    };
     const res = await fetch(`${API_URL}${path}`, {
       method: 'POST',
       body: formData,
-      headers,
+      headers: options.headers,
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => null);

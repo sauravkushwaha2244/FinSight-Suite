@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { AuthProvider } from '../components/AuthProvider';
 import Sidebar from '../components/Sidebar';
 import { Menu, TrendingUp } from 'lucide-react';
 import './globals.css';
@@ -26,7 +25,6 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/logo.png" />
       </head>
       <body>
-        <AuthProvider>
           {isLandingPage ? (
             <main className="min-h-screen">
               {children}
@@ -85,7 +83,6 @@ export default function RootLayout({ children }) {
               </div>
             </div>
           )}
-        </AuthProvider>
       </body>
     </html>
   );
